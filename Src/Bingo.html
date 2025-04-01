@@ -1,1 +1,182 @@
 
+<!DOCTYPE html>
+<html>
+<head>
+<title>Advanced Bingo</title>
+<style>
+body {
+  font-family: sans-serif;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  margin: 0;
+}
+
+#game-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+#grid {
+  display: grid;
+  grid-template-columns: repeat(5, 50px);
+  grid-gap: 5px;
+  margin-bottom: 20px;
+}
+
+.button {
+  width: 50px;
+  height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #ccc;
+  cursor: pointer;
+}
+
+.button.marked {
+  background-color: lightblue;
+}
+
+#call-area {
+  margin-bottom: 10px;
+}
+#call-display{
+    padding:10px;
+    border:1px solid black;
+    margin-bottom:10px;
+}
+
+#controls button {
+  padding: 8px 16px;
+  margin: 5px;
+}
+
+</style>
+</head>
+<body>
+
+<div id="game-container">
+  <div id="call-area">
+    <div id="call-display"></div>
+  </div>
+  <div id="grid"></div>
+  <div id="controls">
+    <button onclick="startGame()">Start Game</button>
+    <button onclick="callNumber()">Call Number</button>
+  </div>
+</div>
+
+<script>
+let gridSize = 5;
+let numbers = Array.from({ length: 75 }, (_, i) => i + 1);
+let calledNumbers = [];
+let bingoGrid = [];
+
+function createGrid() {
+  const grid = document.getElementById('grid');
+  grid.innerHTML = '';
+  bingoGrid = [];
+
+  for (let i = 0; i < gridSize * gridSize; i++) {
+    const num = numbers.splice(Math.floor(Math.random() * numbers.length), 1)[0];
+    bingoGrid.push({ number: num, marked: false });
+    const button = document.createElement('button');
+    button.classList.add('button');
+    button.textContent = num;
+    button.addEventListener('click', () => markNumber(i));
+    grid.appendChild(button);
+  }
+}
+
+function markNumber(index) {
+  bingoGrid[index].marked = !bingoGrid[index].marked;
+  const buttons = document.querySelectorAll('.button');
+  buttons[index].classList.toggle('marked');
+  checkBingo();
+}
+
+function callNumber() {
+  if (numbers.length === 0) {
+    alert("No more numbers to call!");
+    return;
+  }
+  const num = numbers.splice(Math.floor(Math.random() * numbers.length), 1)[0];
+  calledNumbers.push(num);
+  document.getElementById('call-display').textContent = `Called: ${num}`;
+
+  const buttons = document.querySelectorAll('.button');
+  bingoGrid.forEach((cell, index) => {
+    if (cell.number === num) {
+      markNumber(index);
+    }
+  });
+
+}
+
+function checkBingo() {
+    let win = false;
+    //check horizontal
+    for(let i = 0; i < gridSize; i++){
+        let rowWin = true;
+        for(let j = 0; j < gridSize; j++){
+            if(!bingoGrid[i * gridSize + j].marked){
+                rowWin = false;
+                break;
+            }
+        }
+        if(rowWin){win = true; break;}
+    }
+
+    //check vertical
+    for(let i = 0; i < gridSize; i++){
+        let colWin = true;
+        for(let j = 0; j < gridSize; j++){
+            if(!bingoGrid[j * gridSize + i].marked){
+                colWin = false;
+                break;
+            }
+        }
+        if(colWin){win = true; break;}
+    }
+
+    //check diagonal
+    let diag1Win = true;
+    for(let i = 0; i < gridSize; i++){
+        if(!bingoGrid[i * gridSize + i].marked){
+            diag1Win = false;
+            break;
+        }
+    }
+    if(diag1Win){win = true;}
+
+    let diag2Win = true;
+    for(let i = 0; i < gridSize; i++){
+        if(!bingoGrid[i * gridSize + (gridSize-1-i)].marked){
+            diag2Win = false;
+            break;
+        }
+    }
+    if(diag2Win){win = true;}
+
+    if(win){
+        alert("BINGO!");
+    }
+}
+
+function startGame() {
+  numbers = Array.from({ length: 75 }, (_, i) => i + 1);
+  calledNumbers = [];
+  createGrid();
+  document.getElementById('call-display').textContent = "";
+}
+
+startGame(); // Initialize the game on page load
+
+</script>
+
+</body>
+</html>
