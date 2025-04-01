@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Advanced Bingo</title>
+<style>
+body {
+  font-family: 'Montserrat', sans-serif;
+  background: linear-gradient(135deg, #4a00e0, #8e2de2);
+  color: white;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  margin: 0;
+  overflow: hidden;
+}
+
+#game-container {
+  background-color: rgba(255, 255, 255, 0.1);
+  border-radius: 20px;
+  padding: 40px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+#grid {
+  display: grid;
+  grid-template-columns: repeat(5, 80px);
+  grid-gap: 12px;
+  margin-bottom: 30px;
+}
+
+.button {
+  width: 80px;
+  height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 15px;
+  background-color: rgba(255, 255, 255, 0.2);
+  color: white;
+  font-size: 1.3em;
+  cursor: pointer;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+}
+
+.button:hover {
+  background-color: rgba(255, 255, 255, 0.3);
+  transform: translateY(-3px);
+}
+
+.button.marked {
+  background: linear-gradient(to right, #ff6e7f, #bfe9ff);
+  color: black;
+  transform: scale(1.1);
+}
+
+#call-area {
+  margin-bottom: 20px;
+}
+
+#call-display {
+  padding: 18px 30px;
+  border-radius: 10px;
+  background-color: rgba(0, 0, 0, 0.2);
+  font-size: 1.2em;
+  text-align: center;
+}
+
+#controls {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+#controls button {
+  padding: 15px 30px;
+  border: none;
+  border-radius: 10px;
+  background-color: #64b5f6;
+  color: white;
+  font-size: 1.1em;
+  cursor: pointer;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+}
+
+#controls button:hover {
+  background-color: #42a5f5;
+  transform: translateY(-3px);
+}
+
+#bingo-message {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background-color: rgba(0, 0, 0, 0.8);
+  padding: 50px;
+  border-radius: 20px;
+  font-size: 2.5em;
+  display: none;
+  z-index: 10;
+}
+
+#power-ups {
+    display: flex;
+    gap:10px;
+}
+
+.power-up-button {
+    padding: 10px 15px;
+    border: 1px solid white;
+    border-radius: 5px;
+    background-color: rgba(0,0,0,0.3);
+    color: white;
+    cursor: pointer;
+}
+
+#called-numbers-display{
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    margin-top: 10px;
+    justify-content: center;
+}
+.called-number{
+    padding: 5px 10px;
+    background-color: rgba(255,255,255, 0.2);
+    border-radius: 5px;
+    font-size: 0.8em;
+}
+</style>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+<div id="game-container">
+  <div id="call-area">
+    <div id="call-display"></div>
+    <div id="called-numbers-display"></div>
+  </div>
+  <div id="grid"></div>
+  <div id="controls">
+    <button onclick="startGame()">Start Game</button>
+    <button onclick="toggleAutoCall()">Auto Call</button>
+  </div>
+    <div id="power-ups">
+        <button class="power-up-button" onclick="useWildCard()">Wild Card</button>
+    </div>
+  <div id="bingo-message">BINGO!</div>
+</div>
+
+<script>
+let gridSize = 5;
+let numbers = Array.from({ length: 75 }, (_, i) => i + 1);
+let calledNumbers = [];
+let bingoGrid = [];
+let wildCards = 2;
+let autoCallInterval;
+let autoCalling = false;
+
+function createGrid() {
+  const grid = document.getElementById('grid');
+  grid.innerHTML = '';
+  bingoGrid = [];
+
+  for (let i = 0; i < gridSize * gridSize; i++) {
+    const num = numbers.splice(Math.floor(Math.random() * numbers.length), 1)[0];
+    bingoGrid.push({ number: num, marked: false });
+    const button = document.createElement('button');
+    button.classList.add('button');
+    button.textContent = num;
+    button.addEventListener('click', () => markNumber(i));
+    grid.appendChild(button);
+  }
+}
+
+function markNumber(index) {
+  bingoGrid[index].marked = !bingoGrid[index].marked;
+  const buttons = document.querySelectorAll('.button');
+  buttons[index].classList.toggle('marked');
+  checkBingo();
+}
+
+function callNumber() {
+  if (numbers.length === 0) {
+    clearInterval(autoCallInterval);
+    alert("No more numbers to call!");
+    return;
+  }
+  const num = numbers.splice(Math.floor(Math.random() * numbers.length), 1)[0];
+  calledNumbers.push(num);
+  document.getElementById('call-display').textContent = `Called: ${num}`;
+
+  const buttons = document.querySelectorAll('.button');
+  bingoGrid.forEach((cell, index) => {
+    if (cell.number === num) {
+      markNumber(index);
+    }
+  });
+  updateCalledNumbersDisplay();
+}
+
+function checkBingo() {
+    let win = false;
+    for(let i = 0; i < gridSize; i++){
+        let rowWin = true;
+        for(let j = 0; j < gridSize; j++){
+            if(!bingoGrid[i * gridSize + j].marked){
+                rowWin = false;
+                break;
+            }
+        }
+        if(rowWin){win = true; break;}
+    }
+
+    for(let i = 0; i < gridSize; i++){
+        let colWin = true;
+        for(let j = 0; j < gridSize; j++){
+            if(!bingoGrid[j * gridSize + i].marked){
+                colWin = false;
+                break;
+            }
+        }
+        if(colWin){win = true; break;}
+    }
+
+    let diag1Win = true;
+    for(let i = 0; i < gridSize; i++){
+        if(!bingoGrid[i * gridSize + i].marked){
+            diag1Win = false;
+            break;
+        }
+    }
+    if(diag1Win){win = true;}
+
+    let diag2Win = true;
+    for(let i = 0; i < gridSize; i++){
+        if(!bingoGrid[i * gridSize + (gridSize-1-i)].marked){
+            diag2Win = false;
+            break;
+        }
+    }
+    if(diag2Win){win = true;}
+
+    if(win){
+        clearInterval(autoCallInterval);
+        document.getElementById("bingo-message").style.display = "block";
+        setTimeout(() => { document.getElementById("bingo-message").style.display = "none"; }, 3000)
+    }
+}
+
+function startGame() {
+  numbers = Array.from({ length: 75 }, (_, i) => i + 1);
+  calledNumbers = [];
+  createGrid();
+  document.getElementById('call-display').textContent = "";
+  wildCards = 2;
+  updateCalledNumbersDisplay();
+  clearInterval(autoCallInterval);
+  autoCalling = false;
+}
+
+function useWildCard(){
+    if(wildCards > 0){
+        wildCards--;
+        let unmarked = bingoGrid.findIndex(cell => cell.marked === false);
+        if (unmarked !== -1){
+            markNumber(unmarked);
+        }
+    } else {
+        alert("no wildcards left");
+    }
+}
+
+function updateCalledNumbersDisplay(){
+    const calledNumbersDisplay = document.getElementById("called-numbers-display");
+    calledNumbersDisplay.innerHTML = "";
+    calledNumbers.forEach(num => {
+        const numDiv = document.createElement("div");
+        numDiv.classList.add("called-number");
+        numDiv.textContent = num;
+        calledNumbersDisplay.appendChild(numDiv);
+    });
+}
+
+function toggleAutoCall() {
+  if (autoCalling) {
+    clearInterval(autoCallInterval);
+    autoCalling = false;
+  } else {
+    autoCallInterval = setInterval(callNumber, 2000); // Call every 2 seconds
+    autoCalling = true;
+  }
+}
+
+startGame();
+</script>
+
+</body>
+</html>
